@@ -1,23 +1,47 @@
 # DataLake Architecture - AWS Cloud Project
 
-Arquitectura completa de DataLake en AWS con ingesta de datos desde múltiples fuentes, catalogación con Glue y consultas analíticas vía API REST.
+Arquitectura completa de DataLake desplegada en **EC2 Ubuntu 22.04** con ingesta de datos desde múltiples fuentes, catalogación con Glue y consultas analíticas vía API REST.
 
 ## 🏗️ Arquitectura
 
 ```
-Bases de Datos (MySQL, PostgreSQL, MongoDB)
-    ↓
-Ingesters (Python + boto3)
-    ↓
-Amazon S3 (Raw Data - Particionado por fecha)
-    ↓
-AWS Glue Crawlers (Data Catalog)
-    ↓
-Amazon Athena (SQL Queries)
-    ↓
-API REST (FastAPI)
-    ↓
-Usuarios/Aplicaciones
+┌─────────────────────────────────────────────────────────────┐
+│                      EC2 Ubuntu 22.04                       │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Docker Containers (7 servicios)                     │   │
+│  │  ├─ MySQL 8.0         (puerto 3307)                  │   │
+│  │  ├─ PostgreSQL 15     (puerto 5433)                  │   │
+│  │  ├─ MongoDB 7.0       (puerto 27018)                 │   │
+│  │  ├─ Ingester MySQL    (ingesta01-mysql)              │   │
+│  │  ├─ Ingester PostgreSQL (ingesta02-postgresql)       │   │
+│  │  ├─ Ingester MongoDB  (ingesta03-mongodb)            │   │
+│  │  └─ API REST FastAPI  (puerto 8000)                  │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                           │                                  │
+└───────────────────────────┼──────────────────────────────────┘
+                            │
+                            ↓ boto3 (JSON Lines)
+        ┌──────────────────────────────────────┐
+        │         Amazon S3 (3 Buckets)        │
+        │  ├─ raw-ms1-data-bgc (MySQL)         │
+        │  ├─ raw-ms2-data-bgc (PostgreSQL)    │
+        │  └─ raw-ms3-data-bgc (MongoDB)       │
+        └──────────────┬───────────────────────┘
+                       │
+                       ↓ AWS Glue Crawlers
+        ┌──────────────────────────────────────┐
+        │   AWS Glue Data Catalog (9 tablas)   │
+        └──────────────┬───────────────────────┘
+                       │
+                       ↓ Athena SQL Queries
+        ┌──────────────────────────────────────┐
+        │      Amazon Athena (Query Engine)    │
+        └──────────────┬───────────────────────┘
+                       │
+                       ↓ API REST (15+ endpoints)
+        ┌──────────────────────────────────────┐
+        │      Usuarios/Aplicaciones           │
+        └──────────────────────────────────────┘
 ```
 
 ## 📁 Estructura del Proyecto
@@ -25,189 +49,367 @@ Usuarios/Aplicaciones
 ```
 cloud-m5/
 │
-├── ms-databases/          # Bases de datos de prueba (MySQL, PostgreSQL, MongoDB)
-├── datalake-ingester/     # Scripts de ingesta de datos hacia S3
-└── api-consultas/         # API REST para consultas analíticas
+├── docker-compose.yml         # Orquestador maestro (usa 'include')
+├── deploy-all.sh              # Script de despliegue para Ubuntu/Linux
+├── .gitignore                 # Protege .env y archivos sensibles
+│
+├── ms-databases/              # 3 bases de datos de prueba
+│   ├── docker-compose.yml     # MySQL, PostgreSQL, MongoDB
+│   ├── .env                   # Credenciales de BD (gitignored)
+│   ├── .env.example           # Plantilla para configurar
+│   ├── init-mysql.sql         # Datos de prueba MS1
+│   ├── init-postgres.sql      # Datos de prueba MS2
+│   ├── init-mongo.js          # Datos de prueba MS3
+│   └── README.md              # Documentación detallada
+│
+├── datalake-ingester/         # ETL: Extrae y sube a S3
+│   ├── docker-compose.yml     # 3 ingesters (uno por DB)
+│   ├── ingester.py            # Lógica de ingesta (boto3)
+│   ├── .env                   # AWS credentials + S3 buckets
+│   ├── .env.example           # Plantilla
+│   ├── requirements.txt       # boto3, pymysql, psycopg2, pymongo
+│   └── README.md              # Documentación ETL
+│
+└── api-consultas/             # API REST con FastAPI
+    ├── docker-compose.yml     # Servicio API (puerto 8000)
+    ├── main.py                # Endpoints de FastAPI
+    ├── athena_client.py       # Cliente para consultas Athena
+    ├── queries.py             # Queries SQL predefinidas
+    ├── .env                   # AWS credentials + config Athena
+    ├── .env.example           # Plantilla
+    ├── requirements.txt       # fastapi, boto3, uvicorn
+    ├── DataLake_API_Postman_Collection.json  # 16 requests
+    └── README.md              # Documentación API con endpoints
 ```
 
-## 🚀 Inicio Rápido
+## 🚀 Inicio Rápido en EC2 Ubuntu
 
-### 1. Configuración de Variables de Entorno
+### Pre-requisitos
 
-Cada carpeta necesita su archivo `.env`:
+1. **EC2 Ubuntu 22.04** (t2.medium o superior recomendado)
+2. **IAM Role** con permisos S3, Glue y Athena (ej: `LabRole` para AWS Academy)
+3. **3 Buckets S3** creados:
+   - `raw-ms1-data-bgc` (para MySQL)
+   - `raw-ms2-data-bgc` (para PostgreSQL)
+   - `raw-ms3-data-bgc` (para MongoDB)
+4. **Docker y Docker Compose instalados** en EC2
+
+### Instalación de Docker en Ubuntu
 
 ```bash
-# En cada carpeta (ms-databases, datalake-ingester, api-consultas)
-cp .env.example .env
+# Actualizar sistema
+sudo apt update && sudo apt upgrade -y
+
+# Instalar Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Agregar usuario al grupo docker (evita usar sudo)
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Verificar instalación
+docker --version
+docker compose version
 ```
 
-**⚠️ IMPORTANTE**: Edita cada `.env` con tus credenciales reales. Los archivos `.env.example` son solo plantillas.
-
-### 2. Despliegue en AWS
-
-#### Pre-requisitos:
-- EC2 con Ubuntu 22.04
-- IAM Role con permisos S3, Glue y Athena (ej: LabRole)
-- Docker y Docker Compose instalados
-- 3 buckets S3 creados
-
-#### Pasos:
+### 1. Clonar el Proyecto y Configurar Variables
 
 ```bash
-# 1. Levantar bases de datos de prueba
+# Clonar repositorio
+git clone <tu-repositorio-url>
+cd cloud-m5
+
+# Configurar variables de entorno en cada componente
 cd ms-databases
-docker-compose up -d
+cp .env.example .env
+nano .env  # Editar credenciales
 
-# 2. Ejecutar ingesters (extracción de datos a S3)
 cd ../datalake-ingester
-docker-compose up -d
+cp .env.example .env
+nano .env  # Configurar AWS credentials y buckets S3
 
-# 3. Configurar Glue Crawlers (desde AWS Console)
-# - Crear Glue Database
-# - Crear Crawlers para cada bucket
-# - Ejecutar Crawlers
-
-# 4. Levantar API REST
 cd ../api-consultas
-docker-compose up -d
+cp .env.example .env
+nano .env  # Configurar AWS credentials y Athena
+
+cd ..  # Volver a raíz
 ```
 
-### 3. Verificar Despliegue
+**⚠️ IMPORTANTE**: Los archivos `.env` contienen credenciales reales y NO se suben a Git.
+
+### 2. Desplegar Todos los Servicios
+
+#### Opción A: Docker Compose desde la Raíz (Más Simple)
 
 ```bash
-# Ver estado de contenedores
+# Levanta TODOS los servicios (7 contenedores)
+docker compose up -d
+
+# Ver estado
+docker compose ps
+
+# Ver logs en tiempo real
+docker compose logs -f
+
+# Detener todo
+docker compose down
+```
+
+#### Opción B: Script Bash con Comandos Útiles
+
+```bash
+# Dar permisos de ejecución
+chmod +x deploy-all.sh
+
+# Levantar todos los servicios (con espera de 15s para DBs)
+./deploy-all.sh start
+
+# Ver estado de todos los contenedores
+./deploy-all.sh status
+
+# Ver logs de todos los servicios
+./deploy-all.sh logs
+
+# Detener todos los servicios
+./deploy-all.sh stop
+
+# Reiniciar todos los servicios
+./deploy-all.sh restart
+
+# Reconstruir contenedores después de cambios
+./deploy-all.sh rebuild
+```
+
+### 3. Configurar AWS Glue (Desde AWS Console)
+
+```bash
+# 1. Crear base de datos en Glue
+aws glue create-database --database-input '{"Name": "datalake_db"}'
+
+# 2. Crear y ejecutar 3 crawlers (uno por bucket S3)
+# Configurar desde AWS Console:
+#   - Crawler 1: raw-ms1-data-bgc → tabla: ms1_*
+#   - Crawler 2: raw-ms2-data-bgc → tabla: ms2_*
+#   - Crawler 3: raw-ms3-data-bgc → tabla: ms3_*
+
+# 3. Ejecutar crawlers para catalogar datos
+# Resultado esperado: 9 tablas en Glue Data Catalog
+```
+
+### 4. Verificar Despliegue
+
+```bash
+# Ver contenedores corriendo (deberías ver 7)
 docker ps
 
-# Ver logs
+# Probar bases de datos
 docker logs mysql-test-db
-docker logs ingesta01-mysql
-docker logs api-consultas-datalake
+docker logs postgres-test-db
+docker logs mongo-test-db
 
-# Probar API
+# Probar ingesters (deben ejecutarse y terminar)
+docker logs ingesta01-mysql
+docker logs ingesta02-postgresql
+docker logs ingesta03-mongodb
+
+# Probar API REST
 curl http://localhost:8000/health
+# Respuesta esperada: {"status":"healthy"}
+
+# Ver Swagger UI en navegador
+# http://<IP-PUBLICA-EC2>:8000/docs
 ```
 
-## 📚 Documentación por Componente
+## � Servicios Desplegados
 
-### 🗄️ [ms-databases](./ms-databases/README.md)
-Bases de datos de prueba con datos de ejemplo para simular 3 microservicios.
+| Servicio | Puerto | Descripción |
+|----------|--------|-------------|
+| **mysql-test-db** | 3307 | MySQL 8.0 con datos de MS1 (usuarios, pedidos, productos) |
+| **postgres-test-db** | 5433 | PostgreSQL 15 con datos de MS2 (clientes, facturas, pagos) |
+| **mongo-test-db** | 27018 | MongoDB 7.0 con datos de MS3 (logs, sesiones, eventos) |
+| **ingesta01-mysql** | - | Extrae MySQL → S3 (formato JSON Lines) |
+| **ingesta02-postgresql** | - | Extrae PostgreSQL → S3 (formato JSON Lines) |
+| **ingesta03-mongodb** | - | Extrae MongoDB → S3 (formato JSON Lines) |
+| **api-consultas-datalake** | 8000 | API REST con 15+ endpoints (Athena queries) |
 
-### 📥 [datalake-ingester](./datalake-ingester/README.md)
-Scripts Python que extraen datos de las bases de datos y los suben a S3 en formato JSON Lines.
+## 🌐 API REST - Endpoints Principales
 
-### 🌐 [api-consultas](./api-consultas/README.md)
-API REST desarrollada con FastAPI que ejecuta queries en Athena y expone endpoints analíticos.
+Accede a la documentación interactiva: **`http://<EC2-IP>:8000/docs`**
 
-## 🔐 Seguridad
+### Endpoints Disponibles:
 
-### Archivos que NO se suben a Git:
-- ✅ `.env` (contiene credenciales reales)
-- ✅ `*.pem` y `*.ppk` (llaves SSH)
-- ✅ `notes.txt` (puede contener info sensible)
-- ✅ Datos de bases de datos (`mysql-data/`, etc.)
+- `GET /health` - Health check
+- `GET /api/dashboard` - Dashboard general con métricas
+- `GET /api/usuarios` - Listar usuarios (MS1)
+- `GET /api/pedidos` - Listar pedidos (MS1)
+- `GET /api/productos` - Listar productos (MS1)
+- `GET /api/clientes` - Listar clientes (MS2)
+- `GET /api/facturas` - Listar facturas (MS2)
+- `GET /api/pagos` - Listar pagos (MS2)
+- `GET /api/logs` - Listar logs (MS3)
+- `GET /api/sesiones` - Listar sesiones (MS3)
+- `GET /api/eventos` - Listar eventos (MS3)
+- `GET /api/pedidos/{pedido_id}` - Pedido por ID
+- `GET /api/productos-por-categoria/{categoria}` - Productos filtrados
+- `GET /api/facturas-por-cliente/{cliente_id}` - Facturas de cliente
+- `POST /api/query-custom` - Ejecutar query SQL personalizada
 
-### Archivos que SÍ se suben a Git:
-- ✅ `.env.example` (plantillas sin credenciales reales)
-- ✅ Código fuente (`.py`, `.js`, `.sql`)
-- ✅ Dockerfiles y docker-compose.yml
-- ✅ README.md y documentación
+**📥 Importar Postman Collection**: `api-consultas/DataLake_API_Postman_Collection.json` (16 requests listos)
+
+## 📚 Documentación Detallada por Componente
+
+- **[ms-databases/README.md](./ms-databases/README.md)** - Bases de datos, esquemas, datos de prueba
+- **[datalake-ingester/README.md](./datalake-ingester/README.md)** - Ingesters, formato JSON Lines, particiones S3
+- **[api-consultas/README.md](./api-consultas/README.md)** - API REST, endpoints, Athena queries, ejemplos
 
 ## 🛠️ Tecnologías Utilizadas
 
-### AWS Services:
-- **S3** - Almacenamiento de datos raw
-- **EC2** - Servidor para contenedores Docker
-- **IAM** - Gestión de permisos (LabRole)
-- **Glue** - Data Catalog y Crawlers
-- **Athena** - Motor de consultas SQL
+| Categoría | Tecnología | Versión |
+|-----------|------------|---------|
+| **Cloud** | AWS S3, Glue, Athena, EC2, IAM | - |
+| **Lenguaje** | Python | 3.11 |
+| **Framework API** | FastAPI | 0.104.1 |
+| **SDK AWS** | boto3 | 1.34.0 |
+| **Bases de Datos** | MySQL | 8.0 |
+| | PostgreSQL | 15 |
+| | MongoDB | 7.0 |
+| **Containerización** | Docker | 24.x |
+| | Docker Compose | v3.8 |
+| **Formato de Datos** | JSON Lines (NDJSON) | - |
 
-### Stack Tecnológico:
-- **Python 3.11** - Lenguaje principal
-- **FastAPI** - Framework para API REST
-- **boto3** - SDK de AWS para Python
-- **Docker & Docker Compose** - Containerización
-- **MySQL 8.0** - Base de datos relacional
-- **PostgreSQL 15** - Base de datos relacional
-- **MongoDB 7.0** - Base de datos NoSQL
+## 🔐 Seguridad y Buenas Prácticas
 
-## 📊 Endpoints de la API
+### Archivos Protegidos (`.gitignore`):
+- ✅ `.env` - Credenciales reales
+- ✅ `*.pem`, `*.ppk` - Llaves SSH
+- ✅ `notes.txt` - Notas personales
+- ✅ `mysql-data/`, `postgres-data/`, `mongo-data/` - Volúmenes de datos
 
-Una vez desplegada la API, accede a:
-- **Swagger UI**: `http://<EC2-IP>:8000/docs`
-- **Health Check**: `http://<EC2-IP>:8000/health`
-- **Dashboard**: `http://<EC2-IP>:8000/api/dashboard`
-
-Ver [Colección de Postman](./api-consultas/DataLake_API_Postman_Collection.json) para probar todos los endpoints.
+### Credenciales AWS:
+- Usa **IAM Roles** en EC2 (no hardcodear access keys)
+- Para AWS Academy usa `LabRole` / `LabInstanceProfile`
+- Rota credenciales regularmente
 
 ## 🔧 Comandos Útiles
 
 ```bash
-# Ver todos los contenedores corriendo
-docker ps
-
-# Ver logs en tiempo real
-docker logs -f <container-name>
+# Ver logs de un servicio específico
+docker logs -f <nombre-contenedor>
 
 # Reiniciar un servicio
-docker-compose restart <service-name>
+docker compose restart <nombre-servicio>
 
-# Detener todo
-docker-compose down
+# Reconstruir después de cambios en código
+docker compose up -d --build
 
-# Detener y eliminar volúmenes (⚠️ elimina datos)
-docker-compose down -v
+# Detener y eliminar volúmenes (⚠️ elimina datos de BD)
+docker compose down -v
 
-# Reconstruir después de cambios
-docker-compose up -d --build
+# Ver uso de recursos
+docker stats
+
+# Limpiar contenedores detenidos
+docker system prune -a
+
+# Ver redes Docker
+docker network ls
+
+# Inspeccionar un contenedor
+docker inspect <nombre-contenedor>
 ```
 
 ## 🐛 Troubleshooting
 
-### Error: "network not found"
+### Error: "Cannot connect to Docker daemon"
 ```bash
-# Crear la red manualmente
-docker network create datalake-network
+# Verificar que Docker esté corriendo
+sudo systemctl status docker
+
+# Iniciar Docker
+sudo systemctl start docker
+
+# Agregar usuario al grupo docker
+sudo usermod -aG docker $USER
+newgrp docker
 ```
 
 ### Error: "Port already in use"
 ```bash
-# Cambiar puertos en .env
-# O detener el servicio que usa el puerto
+# Ver qué proceso usa el puerto
+sudo lsof -i :8000
+
+# O cambiar puerto en .env del servicio
 ```
 
 ### Error: "Permission denied" en S3
-- Verifica que el IAM Role tenga permisos S3
-- Revisa que los buckets existan en la región correcta
+- Verifica que el IAM Role en EC2 tenga políticas: `AmazonS3FullAccess`, `AWSGlueConsoleFullAccess`, `AmazonAthenaFullAccess`
+- Revisa que los buckets existan en la región correcta (us-east-1)
+- Verifica credenciales en archivos `.env`
 
-### Athena devuelve errores de tipo
-- Verifica que los Crawlers hayan ejecutado correctamente
-- Asegúrate de que los datos estén en formato JSON Lines (no JSON pretty-printed)
+### Athena devuelve errores de tipos de datos
+- Verifica que los datos en S3 estén en **JSON Lines** (no JSON pretty-printed)
+- Ejecuta los Glue Crawlers para actualizar el esquema
+- Los ingesters ya convierten `Decimal` → `float` y `datetime` → `ISO string`
 
-## 📝 Notas Adicionales
+### Ingesters no suben datos a S3
+```bash
+# Ver logs de ingesters
+docker logs ingesta01-mysql
+docker logs ingesta02-postgresql
+docker logs ingesta03-mongodb
 
-### AWS Academy Limitations:
-- No puedes crear IAM Roles nuevos (usa LabRole/LabInstanceProfile)
-- Las sesiones expiran después de 4 horas
-- Algunos servicios pueden estar restringidos
+# Verificar conectividad con AWS
+aws s3 ls s3://raw-ms1-data-bgc/
 
-### Recomendaciones:
-- Usa contraseñas seguras en producción
-- Configura backups de las bases de datos
-- Implementa monitoreo y alertas
-- Considera usar AWS Secrets Manager para credenciales
+# Revisar .env en datalake-ingester/
+```
+
+### API devuelve 500 Internal Server Error
+```bash
+# Ver logs de la API
+docker logs api-consultas-datalake
+
+# Verificar que Glue Data Catalog tenga tablas
+aws glue get-tables --database-name datalake_db
+
+# Verificar .env en api-consultas/
+```
+
+## 📝 Limitaciones de AWS Academy
+
+- ⚠️ **No puedes crear IAM Roles nuevos** → Usa `LabRole` existente
+- ⚠️ **Sesiones expiran después de 4 horas** → Re-inicia la lab
+- ⚠️ **Algunos servicios están restringidos** (Lambda, RDS managed, etc.)
+- ✅ **S3, Glue, Athena y EC2 funcionan perfectamente**
 
 ## 🤝 Contribución
 
-1. Copia `.env.example` a `.env` en cada carpeta
-2. Configura tus credenciales
-3. Haz tus cambios
-4. Asegúrate de que `.env` esté en `.gitignore`
-5. Prueba localmente antes de subir
+```bash
+# 1. Copiar plantillas de variables
+cp ms-databases/.env.example ms-databases/.env
+cp datalake-ingester/.env.example datalake-ingester/.env
+cp api-consultas/.env.example api-consultas/.env
+
+# 2. Configurar credenciales reales (NO subir a Git)
+
+# 3. Hacer cambios en código
+
+# 4. Probar localmente
+docker compose up -d --build
+
+# 5. Asegurarse que .env esté en .gitignore
+
+# 6. Commit y push (sin .env)
+git add .
+git commit -m "descripción"
+git push
+```
 
 ## 📄 Licencia
 
-Este es un proyecto educativo para AWS Academy.
+Proyecto educativo para AWS Academy - Cloud Computing.
 
 ---
 
-**Desarrollado con ❤️ para aprender arquitecturas de DataLake en AWS**
+**Desarrollado con ☁️ para aprender arquitecturas DataLake en AWS**
