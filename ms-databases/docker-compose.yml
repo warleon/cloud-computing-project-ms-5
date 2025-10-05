@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # MySQL de prueba (Microservicio 1)
   mysql-db:
