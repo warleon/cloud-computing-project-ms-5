@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # MySQL de prueba (Microservicio 1)
   mysql-db:
@@ -71,8 +69,3 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-networks:
-  datalake-network:
-    driver: bridge
-    external: false

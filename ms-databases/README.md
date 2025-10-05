@@ -1,15 +1,30 @@
 # Test Databases - Microservicios
 
-Entorno de bases de datos de prueba que simula 3 microservicios con datos de ejemplo, diseñado para probar el flujo completo de ingesta hacia el DataLake.
+Entorno de bases de datos de prueba desplegado en **EC2 Ubuntu 22.04** que simula 3 microservicios con datos de ejemplo, utilizado como fuente de datos para el flujo completo de ingesta hacia el DataLake en AWS.
 
-## 🎯 Propósito
+## 🎯 Descripción del Componente
 
-Este componente proporciona:
-- **Fuentes de datos realistas**: 3 bases de datos con esquemas diferentes
-- **Datos de prueba**: Tablas/colecciones pre-pobladas con datos de ejemplo
-- **Aislamiento**: Cada microservicio tiene su propia base de datos
-- **Facilidad de setup**: Todo containerizado con Docker Compose
-- **Compatibilidad**: Diseñado para trabajar con el ingester del DataLake
+Este componente implementa:
+- **3 Bases de datos containerizadas**: MySQL 8.0, PostgreSQL 15 y MongoDB 7.0
+- **Fuentes de datos realistas**: Esquemas y datos que simulan microservicios de producción
+- **Datos de prueba pre-cargados**: 9 tablas/colecciones con datos de ejemplo
+- **Aislamiento por microservicio**: Cada servicio tiene su propia base de datos independiente
+- **Despliegue en Docker**: Todos los servicios corriendo en contenedores Docker en EC2
+- **Red compartida**: Comunicación entre contenedores vía red Docker `datalake-network`
+- **Integración con DataLake**: Fuente de datos para los ingesters que extraen hacia S3
+
+## 🚀 Despliegue en AWS
+
+### Infraestructura Implementada:
+- **EC2 Ubuntu 22.04** (t2.medium o superior)
+- **Docker Engine** instalado y configurado
+- **Docker Compose** para orquestación de contenedores
+- **3 Contenedores activos**:
+  - `mysql-test-db` (puerto 3307)
+  - `postgres-test-db` (puerto 5433)
+  - `mongo-test-db` (puerto 27018)
+- **Volúmenes persistentes** para datos de bases de datos
+- **Security Group** configurado con puertos necesarios abiertos
 
 ## 🏗️ Arquitectura
 
@@ -36,79 +51,108 @@ Este componente proporciona:
     Ingester MS1      Ingester MS2      Ingester MS3
 ```
 
-## 🗄️ Servicios
+## 🗄️ Servicios Implementados
 
-### 1. MySQL (Microservicio 1)
-- **Puerto**: 3306
-- **Database**: testdb
-- **Tablas**: 
-  - `users` - Usuarios del sistema
-  - `orders` - Pedidos/órdenes
-  - `products` - Catálogo de productos
+### 1. MySQL 8.0 (Microservicio 1)
+- **Contenedor**: `mysql-test-db`
+- **Puerto mapeado**: 3307 → 3306
+- **Database**: `testdb`
+- **Usuario**: configurado vía `.env`
+- **Volumen**: `mysql-data` (persistente)
+- **Health Check**: `mysqladmin ping` cada 10s
+- **Tablas implementadas**: 
+  - `users` - 10 usuarios del sistema
+  - `orders` - 15 pedidos/órdenes
+  - `products` - 12 productos en catálogo
+- **Script de inicialización**: `init-mysql.sql`
 
-### 2. PostgreSQL (Microservicio 2)
-- **Puerto**: 5432
-- **Database**: testdb
-- **Tablas**:
-  - `customers` - Clientes B2B
-  - `invoices` - Facturas
-  - `payments` - Pagos
+### 2. PostgreSQL 15 (Microservicio 2)
+- **Contenedor**: `postgres-test-db`
+- **Puerto mapeado**: 5433 → 5432
+- **Database**: `testdb`
+- **Usuario**: configurado vía `.env`
+- **Volumen**: `postgres-data` (persistente)
+- **Health Check**: `pg_isready` cada 10s
+- **Tablas implementadas**:
+  - `customers` - 5 clientes B2B
+  - `invoices` - 8 facturas con diferentes estados
+  - `payments` - 6 pagos procesados
+- **Script de inicialización**: `init-postgres.sql`
 
-### 3. MongoDB (Microservicio 3)
-- **Puerto**: 27017
-- **Database**: testdb
-- **Colecciones**:
-  - `inventory` - Inventario de productos
-  - `shipments` - Envíos/entregas
-  - `suppliers` - Proveedores
+### 3. MongoDB 7.0 (Microservicio 3)
+- **Contenedor**: `mongo-test-db`
+- **Puerto mapeado**: 27018 → 27017
+- **Database**: `testdb`
+- **Usuario**: configurado vía `.env`
+- **Volumen**: `mongo-data` (persistente)
+- **Health Check**: `mongosh --eval 'db.adminCommand("ping")'` cada 10s
+- **Colecciones implementadas**:
+  - `inventory` - 6 productos con ubicaciones de almacén
+  - `shipments` - 7 envíos en diferentes estados
+  - `suppliers` - 5 proveedores activos e inactivos
+- **Script de inicialización**: `init-mongo.js`
 
-## Configuración
+## 📊 Datos de Prueba
+
+### Resumen de Datos Implementados:
+- **MySQL**: 37 registros totales (10 users + 15 orders + 12 products)
+- **PostgreSQL**: 19 registros totales (5 customers + 8 invoices + 6 payments)
+- **MongoDB**: 18 documentos totales (6 inventory + 7 shipments + 5 suppliers)
+- **Total**: 74 registros listos para ingesta
+
+## ⚙️ Configuración Implementada
 
 ### Variables de Entorno
-
-1. Copia el archivo de ejemplo:
-```bash
-cp .env.example .env
-```
-
-2. Configura las variables en `.env`:
+Las bases de datos están configuradas con variables de entorno definidas en el archivo `.env`:
 
 ```bash
-# MySQL Configuration
-MYSQL_ROOT_PASSWORD=rootpassword
+# MySQL Configuration (implementada)
+MYSQL_ROOT_PASSWORD=********
 MYSQL_DATABASE=testdb
 MYSQL_USER=appuser
-MYSQL_PASSWORD=apppass123
-MYSQL_PORT=3306
+MYSQL_PASSWORD=********
+MYSQL_PORT=3307 (mapeado externamente)
 
-# PostgreSQL Configuration
+# PostgreSQL Configuration (implementada)
 POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgrespassword
+POSTGRES_PASSWORD=********
 POSTGRES_DB=testdb
 POSTGRES_APP_USER=appuser
-POSTGRES_APP_PASSWORD=apppass123
-POSTGRES_PORT=5432
+POSTGRES_APP_PASSWORD=********
+POSTGRES_PORT=5433 (mapeado externamente)
 
-# MongoDB Configuration
+# MongoDB Configuration (implementada)
 MONGO_INITDB_ROOT_USERNAME=admin
-MONGO_INITDB_ROOT_PASSWORD=adminpassword
+MONGO_INITDB_ROOT_PASSWORD=********
 MONGO_INITDB_DATABASE=testdb
 MONGO_APP_USER=appuser
-MONGO_APP_PASSWORD=apppass123
-MONGO_PORT=27017
+MONGO_APP_PASSWORD=********
+MONGO_PORT=27018 (mapeado externamente)
 
 # Docker Network
 NETWORK_NAME=datalake-network
 ```
 
-**Nota**: Estas son credenciales de prueba. En producción, usa contraseñas seguras.
+**Nota de Seguridad**: El archivo `.env` con credenciales reales está protegido por `.gitignore` y no se sube a Git.
 
-## Uso
+## 🔌 Conectividad
 
-### Levantar todas las bases de datos
+### Desde Otros Contenedores Docker (Ingesters)
+Los ingesters se conectan usando nombres de servicio:
+- MySQL: `mysql-db:3306`
+- PostgreSQL: `postgres-db:5432`
+- MongoDB: `mongo-db:27017`
 
+### Desde Host EC2 (para debugging)
 ```bash
-docker-compose up -d
+# MySQL
+mysql -h 127.0.0.1 -P 3307 -u appuser -p
+
+# PostgreSQL
+psql -h 127.0.0.1 -p 5433 -U appuser -d testdb
+
+# MongoDB
+mongosh --host 127.0.0.1 --port 27018 -u appuser -p
 ```
 
 ### Verificar estado

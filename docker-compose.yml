@@ -1,0 +1,25 @@
+# ============================================
+# Docker Compose Maestro - DataLake completo
+# ============================================
+# Este archivo orquesta todos los servicios del proyecto
+# Uso: docker compose up -d
+#
+# Servicios incluidos:
+# - 3 Bases de datos (MySQL, PostgreSQL, MongoDB)
+# - 3 Ingesters (extracción de datos a S3)
+# - 1 API REST (consultas vía Athena)
+# ============================================
+
+# Incluir archivos docker-compose de cada componente
+include:
+  - path: ./ms-databases/docker-compose.yml
+    env_file: ./ms-databases/.env
+  - path: ./datalake-ingester/docker-compose.yml
+    env_file: ./datalake-ingester/.env
+  - path: ./api-consultas/docker-compose.yml
+    env_file: ./api-consultas/.env
+
+# Definir la red compartida aquí (una sola vez)
+networks:
+  datalake-network:
+    driver: bridge

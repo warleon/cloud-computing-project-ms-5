@@ -1,15 +1,52 @@
 # API REST - Consultas Analíticas DataLake
 
-API REST desarrollada con **FastAPI** que ejecuta consultas SQL sobre Amazon Athena, exponiendo endpoints analíticos para consultar datos del DataLake almacenados en S3.
+API REST desplegada en **EC2 Ubuntu 22.04** desarrollada con **FastAPI** que ejecuta consultas SQL sobre **Amazon Athena**, exponiendo 15+ endpoints analíticos para consultar datos del DataLake almacenados en S3 y catalogados con AWS Glue.
 
-## 🎯 Propósito
+## 🎯 Descripción del Componente
 
-Esta API actúa como capa de acceso al DataLake, permitiendo:
-- ✅ Ejecutar consultas SQL sobre datos catalogados en AWS Glue
-- ✅ Exponer endpoints RESTful para análisis de datos
-- ✅ Consultar datos de múltiples fuentes (MySQL, PostgreSQL, MongoDB)
-- ✅ Generar dashboards y reportes analíticos
-- ✅ Ejecutar queries personalizadas vía HTTP
+Esta API implementa la capa de acceso al DataLake, proporcionando:
+
+### **Funcionalidades Implementadas:**
+- ✅ **15+ Endpoints RESTful** para consultas analíticas
+- ✅ **Integración con Amazon Athena** vía boto3 SDK
+- ✅ **Consultas SQL sobre AWS Glue Data Catalog** (9 tablas catalogadas)
+- ✅ **Datos de múltiples fuentes**: MySQL, PostgreSQL y MongoDB unificados
+- ✅ **Dashboard general** con métricas agregadas
+- ✅ **Queries personalizadas** vía endpoint POST
+- ✅ **Documentación interactiva** con Swagger UI
+- ✅ **Health checks** y monitoreo
+- ✅ **CORS configurado** para acceso desde clientes web
+- ✅ **Logging estructurado** con niveles configurables
+
+## 🚀 Despliegue en AWS
+
+### Infraestructura AWS Implementada:
+
+**Amazon Athena:**
+- Motor de consultas SQL serverless
+- Database: `datalake_db` (AWS Glue Data Catalog)
+- 9 tablas catalogadas: `ms1_users`, `ms1_orders`, `ms1_products`, `ms2_customers`, `ms2_invoices`, `ms2_payments`, `ms3_inventory`, `ms3_shipments`, `ms3_suppliers`
+- Output location: S3 bucket para resultados de queries
+
+**AWS Glue Data Catalog:**
+- 3 Crawlers configurados y ejecutados
+- 9 tablas con esquemas inferidos automáticamente
+- Particiones por fecha reconocidas
+- Tipos de datos correctamente mapeados
+
+**EC2 Ubuntu 22.04:**
+- API corriendo en contenedor Docker
+- Puerto 8000 expuesto
+- IAM Role: `LabRole` con permisos Athena, Glue y S3
+- Security Group configurado con puerto 8000 abierto
+- Health check endpoint activo
+
+**Contenedor Docker:**
+- Imagen: Python 3.11 slim
+- Framework: FastAPI 0.104.1
+- ASGI Server: Uvicorn
+- Dependencies: boto3, python-dotenv
+- Variables de entorno configuradas vía `.env`
 
 ## 🏗️ Arquitectura
 
@@ -27,13 +64,16 @@ AWS Glue Data Catalog
 Amazon S3 (Datos en JSON Lines)
 ```
 
-## 📋 Pre-requisitos
+## � Componentes AWS Integrados
 
-- EC2 con Docker y Docker Compose instalados
-- IAM Role con permisos para Athena, Glue y S3 (ej: LabRole)
-- Datos ya ingestados en S3 con formato JSON Lines
-- Tablas catalogadas en AWS Glue Data Catalog
-- Security Group con puerto 8000 abierto (para acceso externo)
+Esta API se integra con los siguientes componentes ya desplegados:
+
+- ✅ **Amazon S3**: 3 buckets con datos en JSON Lines (`raw-ms1-data-bgc`, `raw-ms2-data-bgc`, `raw-ms3-data-bgc`)
+- ✅ **AWS Glue Data Catalog**: Database `datalake_db` con 9 tablas catalogadas
+- ✅ **Amazon Athena**: Motor SQL serverless configurado con workgroup `primary`
+- ✅ **EC2 Ubuntu 22.04**: Servidor con Docker, IAM Role `LabRole`, Security Group con puerto 8000 abierto
+- ✅ **IAM Role**: `LabRole` con permisos S3, Glue y Athena
+- ✅ **Docker Network**: Aislamiento de contenedores en EC2
 
 ## ⚙️ Configuración
 
@@ -106,47 +146,47 @@ Una vez corriendo la API, accede a:
 - **ReDoc**: `http://<IP-PUBLICA-EC2>:8000/redoc` (documentación alternativa)
 - **Health Check**: `http://<IP-PUBLICA-EC2>:8000/health`
 
-## 🚀 Instalación y Ejecución
+## 🚀 Despliegue Implementado
 
-### 1. Construir y levantar el contenedor
+### Contenedor Docker
+El servicio está desplegado como contenedor Docker en EC2:
 
 ```bash
-cd ~/api-consultas
-
-# Construir imagen y levantar contenedor
-docker-compose up -d --build
+# Contenedor construido y desplegado
+Container: api-consultas-datalake
+Image: Python 3.11 slim + FastAPI
+Status: Running
+Port Mapping: 8000:8000
+Network: Default bridge
+Restart Policy: always
 ```
 
-### 2. Verificar estado
+### Configuración de Red
+**Security Group configurado con**:
+- Type: Custom TCP
+- Port: 8000
+- Source: 0.0.0.0/0 (acceso público)
+- Description: API DataLake access
+
+### Acceso al Servicio
+La API está accesible en:
+- **Swagger UI**: `http://<IP-PUBLICA-EC2>:8000/docs`
+- **Health Check**: `http://<IP-PUBLICA-EC2>:8000/health`
+- **Dashboard**: `http://<IP-PUBLICA-EC2>:8000/api/dashboard`
+- **Endpoints**: `http://<IP-PUBLICA-EC2>:8000/api/*`
+
+### Verificación de Estado
 
 ```bash
-# Ver contenedores corriendo
-docker ps
+# Ver contenedor corriendo
+docker ps | grep api-consultas-datalake
 
 # Ver logs en tiempo real
 docker logs api-consultas-datalake -f
 
 # Health check desde el servidor
 curl http://localhost:8000/health
-```
-
-### 3. Abrir puerto en Security Group
-
-Para acceder desde fuera del EC2:
-1. AWS Console → EC2 → Security Groups
-2. Seleccionar el Security Group de tu EC2
-3. **Edit inbound rules** → **Add rule**:
-   - Type: **Custom TCP**
-   - Port: **8000**
-   - Source: **0.0.0.0/0** (o tu IP)
-4. **Save rules**
-
-### 4. Probar desde navegador/Postman
-
-```
-http://<IP-PUBLICA-EC2>:8000/docs
-http://<IP-PUBLICA-EC2>:8000/health
-http://<IP-PUBLICA-EC2>:8000/api/dashboard
+# Response: {"status":"healthy","athena_connection":"ok"}
 ```
 
 ## 📦 Colección de Postman
@@ -318,36 +358,46 @@ sudo lsof -i :8000
 - ⚠️ No implementado actualmente
 - 📝 Considera agregar rate limiting en producción
 
-## 📈 Performance
+## 📈 Performance y Costos
 
-### Tiempos de Respuesta Típicos
+### Tiempos de Respuesta Observados
 - Health check: < 100ms
-- Queries simples: 2-5 segundos
-- Queries complejas (JOINs): 5-15 segundos
+- Queries simples (SELECT * FROM tabla LIMIT 10): 2-5 segundos
+- Queries complejas (agregaciones, filtros): 5-15 segundos
+- Dashboard general: 8-12 segundos (múltiples queries)
 
-### Optimización
-- Athena cobra por datos escaneados ($5 por TB)
-- Usa particiones para reducir costos
-- Limita resultados con `LIMIT` en queries
+### Optimización Implementada
+- ✅ Particionamiento por fecha en S3 reduce datos escaneados
+- ✅ Uso de `LIMIT` en queries para resultados acotados
+- ✅ Formato JSON Lines optimizado para Athena
+- ✅ IAM Role en EC2 elimina overhead de credenciales temporales
 
-## 🚀 Próximas Mejoras
+### Costos AWS Athena
+- Precio: $5 USD por TB de datos escaneados
+- Con particionamiento y datos de prueba: costo mínimo (< $0.01 por query)
+- Sin particiones: Athena escanea todo el bucket
 
-- [ ] Implementar caché de resultados (Redis)
-- [ ] Agregar autenticación (JWT)
-- [ ] Rate limiting por IP
-- [ ] Métricas con Prometheus
-- [ ] Frontend web para visualización
-- [ ] Exportar resultados a CSV/Excel
-- [ ] Queries asíncronas para queries largas
+## 🔍 Estado de Implementación
 
-## 🤝 Contribución
+### ✅ Completado
+- 15+ endpoints analíticos funcionando
+- Integración con Athena operativa
+- Datos de 3 fuentes unificados
+- Documentación Swagger UI activa
+- Health checks implementados
+- CORS configurado
+- Logging estructurado
+- Colección Postman con 16 requests
+- Despliegue en EC2 con Docker
+- IAM Role configurado
 
-1. Copia `.env.example` a `.env`
-2. Configura tus credenciales
-3. Haz tus cambios en `main.py`, `athena_client.py` o `queries.py`
-4. Prueba localmente con `docker-compose up -d --build`
-5. Verifica que `.env` no se suba a Git
+### 📊 Métricas del Sistema
+- **9 tablas** catalogadas en Glue
+- **3 fuentes** de datos integradas
+- **15+ endpoints** disponibles
+- **Puerto 8000** expuesto
+- **JSON Lines** como formato de datos
 
-## 📄 Licencia
+## 📄 Información del Proyecto
 
-Este es un proyecto educativo para AWS Academy.
+Este componente es parte de un proyecto educativo para AWS Academy que implementa una arquitectura completa de DataLake en AWS, utilizando servicios como S3, Glue, Athena y EC2.
