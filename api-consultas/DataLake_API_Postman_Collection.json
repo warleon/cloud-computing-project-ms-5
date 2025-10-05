@@ -1,0 +1,461 @@
+{
+	"info": {
+		"_postman_id": "datalake-api-collection-2025",
+		"name": "DataLake API - Analytics",
+		"description": "Colección completa de endpoints para consultar el DataLake via Athena",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://50.16.35.196:8000/health",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"health"
+					]
+				},
+				"description": "Verifica el estado de la API y la conexión con Athena"
+			},
+			"response": []
+		},
+		{
+			"name": "Dashboard General",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://50.16.35.196:8000/api/dashboard",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"dashboard"
+					]
+				},
+				"description": "Dashboard con métricas generales del negocio"
+			},
+			"response": []
+		},
+		{
+			"name": "Resumen de Ventas",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://50.16.35.196:8000/api/ventas/resumen",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"ventas",
+						"resumen"
+					]
+				},
+				"description": "Resumen total de ventas (cantidad de órdenes y monto total)"
+			},
+			"response": []
+		},
+		{
+			"name": "Top Clientes",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://50.16.35.196:8000/api/clientes/top?limit=10",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"clientes",
+						"top"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "10",
+							"description": "Número de clientes a retornar (default: 10)"
+						}
+					]
+				},
+				"description": "Top clientes por monto total de compras"
+			},
+			"response": []
+		},
+		{
+			"name": "Productos Más Vendidos",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://50.16.35.196:8000/api/productos/mas-vendidos?limit=10",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"productos",
+						"mas-vendidos"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "10",
+							"description": "Número de productos a retornar (default: 10)"
+						}
+					]
+				},
+				"description": "Productos más vendidos ordenados por cantidad"
+			},
+			"response": []
+		},
+		{
+			"name": "Ventas por Usuario",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://50.16.35.196:8000/api/ventas/por-usuario",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"ventas",
+						"por-usuario"
+					]
+				},
+				"description": "Ventas agrupadas por usuario"
+			},
+			"response": []
+		},
+		{
+			"name": "Estado de Inventario",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://50.16.35.196:8000/api/inventario/estado",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"inventario",
+						"estado"
+					]
+				},
+				"description": "Estado actual del inventario (productos y cantidades)"
+			},
+			"response": []
+		},
+		{
+			"name": "Inventario Bajo Stock",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://50.16.35.196:8000/api/inventario/bajo-stock?threshold=50",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"inventario",
+						"bajo-stock"
+					],
+					"query": [
+						{
+							"key": "threshold",
+							"value": "50",
+							"description": "Umbral de cantidad (default: 50)"
+						}
+					]
+				},
+				"description": "Productos con stock por debajo del umbral especificado"
+			},
+			"response": []
+		},
+		{
+			"name": "Estado de Pagos",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://50.16.35.196:8000/api/pagos/estado",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"pagos",
+						"estado"
+					]
+				},
+				"description": "Resumen de pagos agrupados por estado"
+			},
+			"response": []
+		},
+		{
+			"name": "Facturas Pendientes",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://50.16.35.196:8000/api/facturas/pendientes",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"facturas",
+						"pendientes"
+					]
+				},
+				"description": "Listado de facturas con estado 'pending'"
+			},
+			"response": []
+		},
+		{
+			"name": "Envíos por Estado",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://50.16.35.196:8000/api/envios/por-estado",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"envios",
+						"por-estado"
+					]
+				},
+				"description": "Envíos agrupados por estado (pending, shipped, delivered)"
+			},
+			"response": []
+		},
+		{
+			"name": "Proveedores Activos",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://50.16.35.196:8000/api/proveedores/activos",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"proveedores",
+						"activos"
+					]
+				},
+				"description": "Listado de proveedores con estado 'active'"
+			},
+			"response": []
+		},
+		{
+			"name": "Órdenes de Alto Valor",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://50.16.35.196:8000/api/ordenes/alto-valor?min_amount=500",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"ordenes",
+						"alto-valor"
+					],
+					"query": [
+						{
+							"key": "min_amount",
+							"value": "500",
+							"description": "Monto mínimo para considerar alto valor (default: 500)"
+						}
+					]
+				},
+				"description": "Órdenes con monto superior al umbral especificado"
+			},
+			"response": []
+		},
+		{
+			"name": "Listar Tablas",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://50.16.35.196:8000/api/tablas",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"tablas"
+					]
+				},
+				"description": "Lista todas las tablas disponibles en el catálogo de Glue"
+			},
+			"response": []
+		},
+		{
+			"name": "Query Personalizada",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"query\": \"SELECT * FROM mysql_ms1_orders LIMIT 10\"\n}"
+				},
+				"url": {
+					"raw": "http://50.16.35.196:8000/api/query/custom",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"query",
+						"custom"
+					]
+				},
+				"description": "Ejecuta una query SQL personalizada en Athena"
+			},
+			"response": []
+		},
+		{
+			"name": "Ejemplo: JOIN entre tablas",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"query\": \"SELECT u.name, u.email, COUNT(o.id) as total_orders, SUM(o.total_amount) as total_spent FROM mysql_ms1_users u JOIN mysql_ms1_orders o ON u.id = o.user_id GROUP BY u.name, u.email ORDER BY total_spent DESC LIMIT 5\"\n}"
+				},
+				"url": {
+					"raw": "http://50.16.35.196:8000/api/query/custom",
+					"protocol": "http",
+					"host": [
+						"50",
+						"16",
+						"35",
+						"196"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"query",
+						"custom"
+					]
+				},
+				"description": "Ejemplo de JOIN entre usuarios y órdenes"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://50.16.35.196:8000",
+			"type": "string"
+		}
+	]
+}

@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  api-consultas-datalake:
+    build: .
+    container_name: api-consultas-datalake
+    ports:
+      - "${API_PORT:-8000}:8000"
+    env_file:
+      - .env
+    restart: unless-stopped

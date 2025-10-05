@@ -1,2 +1,75 @@
-node_modules
-dist
+# Environment Variables - NUNCA subir a Git
+.env
+**/.env
+
+# Keep example files (templates for others)
+!.env.example
+!**/.env.example
+
+# AWS Keys
+*.pem
+*.ppk
+labsuser.pem
+labsuser.ppk
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Database data directories
+mysql-data/
+postgres-data/
+mongo-data/
+**/mysql-data/
+**/postgres-data/
+**/mongo-data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+**/*.log
+
+# Docker
+docker-compose.override.yml
+
+# Personal notes (pueden contener info sensible)
+notes.txt
+TODO.txt
+.notes/
+
+# AWS Credentials
+.aws/
+credentials
+config

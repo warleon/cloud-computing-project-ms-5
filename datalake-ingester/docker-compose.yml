@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # Contenedor 1: Ingesta desde MySQL (Microservicio 1)
+  ingesta01:
+    build: .
+    container_name: ingesta01-mysql
+    env_file:
+      - .env
+    environment:
+      DB_TYPE: mysql
+      DB_HOST: ${MYSQL_HOST}
+      DB_PORT: ${MYSQL_PORT}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+      S3_BUCKET: ${S3_BUCKET_MS1}
+      TABLES: users,orders,products
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+    networks:
+      - ms-databases_datalake-network
+    depends_on:
+      - dummy
+
+  # Contenedor 2: Ingesta desde PostgreSQL (Microservicio 2)
+  ingesta02:
+    build: .
+    container_name: ingesta02-postgresql
+    env_file:
+      - .env
+    environment:
+      DB_TYPE: postgresql
+      DB_HOST: ${POSTGRES_HOST}
+      DB_PORT: ${POSTGRES_PORT}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DATABASE}
+      S3_BUCKET: ${S3_BUCKET_MS2}
+      TABLES: customers,invoices,payments
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+    networks:
+      - ms-databases_datalake-network
+    depends_on:
+      - dummy
+
+  # Contenedor 3: Ingesta desde MongoDB (Microservicio 3)
+  ingesta03:
+    build: .
+    container_name: ingesta03-mongodb
+    env_file:
+      - .env
+    environment:
+      DB_TYPE: mongodb
+      DB_HOST: ${MONGO_HOST}
+      DB_PORT: ${MONGO_PORT}
+      DB_USER: ${MONGO_USER}
+      DB_PASSWORD: ${MONGO_PASSWORD}
+      DB_NAME: ${MONGO_DATABASE}
+      S3_BUCKET: ${S3_BUCKET_MS3}
+      TABLES: inventory,shipments,suppliers
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+    networks:
+      - ms-databases_datalake-network
+    depends_on:
+      - dummy
+
+  # Servicio dummy para depends_on
+  dummy:
+    image: alpine:latest
+    command: echo "Ingesters ready"
+    networks:
+      - ms-databases_datalake-network
+
+networks:
+  ms-databases_datalake-network:
+    external: true

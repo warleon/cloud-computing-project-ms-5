@@ -1,0 +1,29 @@
+# Environment variables
+.env
+
+# MySQL data
+mysql-data/
+
+# PostgreSQL data
+postgres-data/
+
+# MongoDB data
+mongo-data/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
