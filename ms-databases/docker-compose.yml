@@ -72,4 +72,4 @@ services:
 
 networks:
   datalake-network:
-    driver: bridge
+    external: true
