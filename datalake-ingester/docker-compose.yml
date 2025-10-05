@@ -2,6 +2,7 @@ services:
   # Contenedor 1: Ingesta desde MySQL (Microservicio 1)
   ingesta01:
     build: .
+    image: br4yangc/cloud-computing-project-ms-5:ingester-mysql
     container_name: ingesta01-mysql
     env_file:
       - .env
@@ -29,6 +30,7 @@ services:
   # Contenedor 2: Ingesta desde PostgreSQL (Microservicio 2)
   ingesta02:
     build: .
+    image: br4yangc/cloud-computing-project-ms-5:ingester-postgresql
     container_name: ingesta02-postgresql
     env_file:
       - .env
@@ -56,6 +58,7 @@ services:
   # Contenedor 3: Ingesta desde MongoDB (Microservicio 3)
   ingesta03:
     build: .
+    image: br4yangc/cloud-computing-project-ms-5:ingester-mongodb
     container_name: ingesta03-mongodb
     env_file:
       - .env

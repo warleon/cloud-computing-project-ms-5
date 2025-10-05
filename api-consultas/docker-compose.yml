@@ -1,6 +1,7 @@
 services:
   api-consultas-datalake:
     build: .
+    image: br4yangc/cloud-computing-project-ms-5:api-consultas
     container_name: api-consultas-datalake
     ports:
       - "${API_PORT:-8000}:8000"

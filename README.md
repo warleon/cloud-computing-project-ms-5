@@ -402,7 +402,75 @@ Accede a la documentación interactiva: **`http://<EC2-IP>:8000/docs`**
 - Para AWS Academy usa `LabRole` / `LabInstanceProfile`
 - Rota credenciales regularmente
 
-## 🔧 Comandos Útiles
+## � Publicar Imágenes en Docker Hub (Opcional)
+
+El proyecto incluye nombres de imágenes configurados para facilitar la publicación en Docker Hub.
+
+### Imágenes del Proyecto
+
+| Imagen | Tag | Descripción |
+|--------|-----|-------------|
+| `br4yangc/cloud-computing-project-ms-5` | `ingester-mysql` | Ingester para MySQL → S3 |
+| `br4yangc/cloud-computing-project-ms-5` | `ingester-postgresql` | Ingester para PostgreSQL → S3 |
+| `br4yangc/cloud-computing-project-ms-5` | `ingester-mongodb` | Ingester para MongoDB → S3 |
+| `br4yangc/cloud-computing-project-ms-5` | `api-consultas` | API REST con FastAPI para Athena |
+
+**Nota**: Las bases de datos (MySQL, PostgreSQL, MongoDB) usan imágenes oficiales públicas y no requieren publicación.
+
+### Proceso de Publicación
+
+```bash
+# 1. Login en Docker Hub (requiere cuenta gratuita en hub.docker.com)
+docker login -u br4yangc
+
+# 2. Construir todas las imágenes (desde la raíz del proyecto)
+docker-compose build
+
+# 3. Publicar imágenes en Docker Hub
+docker push br4yangc/cloud-computing-project-ms-5:ingester-mysql
+docker push br4yangc/cloud-computing-project-ms-5:ingester-postgresql
+docker push br4yangc/cloud-computing-project-ms-5:ingester-mongodb
+docker push br4yangc/cloud-computing-project-ms-5:api-consultas
+
+# 4. Verificar en Docker Hub
+# https://hub.docker.com/r/br4yangc/cloud-computing-project-ms-5/tags
+```
+
+### Ventajas de Publicar
+
+- ✅ **Despliegue rápido**: Descarga imágenes pre-construidas en lugar de construir
+- ✅ **Portabilidad**: Deploy en múltiples servidores sin clonar código fuente
+- ✅ **Portafolio**: Proyecto visible públicamente y fácil de demostrar
+- ✅ **Versionamiento**: Control de versiones con tags (`v1.0`, `v2.0`, etc.)
+- ✅ **Colaboración**: Otros pueden probar tu proyecto fácilmente
+
+### Usar Imágenes Publicadas
+
+Una vez publicadas, otros pueden desplegar sin construir:
+
+```bash
+# Clonar solo archivos de configuración
+git clone <tu-repo-url>
+cd cloud-computing-project-ms-5
+
+# Configurar .env en cada carpeta
+
+# Descargar imágenes pre-construidas
+docker-compose pull
+
+# Levantar servicios (sin necesidad de construir)
+docker-compose up -d
+```
+
+### Límites del Plan Gratuito
+
+Docker Hub plan gratuito incluye:
+- ✅ Repositorios públicos ilimitados
+- ✅ 1 repositorio privado
+- ✅ Sin límite de pulls autenticados
+- ⚠️ 200 pulls cada 6 horas para usuarios anónimos
+
+## �🔧 Comandos Útiles
 
 ```bash
 # Ver logs de un servicio específico
