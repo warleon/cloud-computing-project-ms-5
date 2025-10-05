@@ -8,15 +8,21 @@ services:
     env_file:
       - .env
     environment:
-      DB_TYPE: mysql
-      DB_HOST: ${MYSQL_HOST}
-      DB_PORT: ${MYSQL_PORT}
-      DB_USER: ${MYSQL_USER}
-      DB_PASSWORD: ${MYSQL_PASSWORD}
-      DB_NAME: ${MYSQL_DATABASE}
-      S3_BUCKET: ${S3_BUCKET_MS1}
-      TABLES: users,orders,products
-      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      # Ingester Type
+      - DB_TYPE=mysql
+      # MySQL Connection
+      - DB_HOST=${MYSQL_HOST:-mysql-test-db}
+      - DB_PORT=${MYSQL_PORT:-3306}
+      - DB_USER=${MYSQL_USER:-root}
+      - DB_PASSWORD=${MYSQL_PASSWORD}
+      - DB_NAME=${MYSQL_DATABASE:-testdb}
+      # S3 Configuration
+      - S3_BUCKET=${S3_BUCKET_MS1}
+      - TABLES=users,orders,products
+      # AWS Configuration
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     networks:
       - ms-databases_datalake-network
     depends_on:
@@ -29,15 +35,21 @@ services:
     env_file:
       - .env
     environment:
-      DB_TYPE: postgresql
-      DB_HOST: ${POSTGRES_HOST}
-      DB_PORT: ${POSTGRES_PORT}
-      DB_USER: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      DB_NAME: ${POSTGRES_DATABASE}
-      S3_BUCKET: ${S3_BUCKET_MS2}
-      TABLES: customers,invoices,payments
-      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      # Ingester Type
+      - DB_TYPE=postgresql
+      # PostgreSQL Connection
+      - DB_HOST=${POSTGRES_HOST:-postgres-test-db}
+      - DB_PORT=${POSTGRES_PORT:-5432}
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DATABASE:-testdb}
+      # S3 Configuration
+      - S3_BUCKET=${S3_BUCKET_MS2}
+      - TABLES=customers,invoices,payments
+      # AWS Configuration
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     networks:
       - ms-databases_datalake-network
     depends_on:
@@ -50,15 +62,21 @@ services:
     env_file:
       - .env
     environment:
-      DB_TYPE: mongodb
-      DB_HOST: ${MONGO_HOST}
-      DB_PORT: ${MONGO_PORT}
-      DB_USER: ${MONGO_USER}
-      DB_PASSWORD: ${MONGO_PASSWORD}
-      DB_NAME: ${MONGO_DATABASE}
-      S3_BUCKET: ${S3_BUCKET_MS3}
-      TABLES: inventory,shipments,suppliers
-      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      # Ingester Type
+      - DB_TYPE=mongodb
+      # MongoDB Connection
+      - DB_HOST=${MONGO_HOST:-mongo-test-db}
+      - DB_PORT=${MONGO_PORT:-27017}
+      - DB_USER=${MONGO_USER:-admin}
+      - DB_PASSWORD=${MONGO_PASSWORD}
+      - DB_NAME=${MONGO_DATABASE:-testdb}
+      # S3 Configuration
+      - S3_BUCKET=${S3_BUCKET_MS3}
+      - TABLES=inventory,shipments,suppliers
+      # AWS Configuration
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     networks:
       - ms-databases_datalake-network
     depends_on:
