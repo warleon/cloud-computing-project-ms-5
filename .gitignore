@@ -73,3 +73,5 @@ TODO.txt
 .aws/
 credentials
 config
+
+node_modules/
