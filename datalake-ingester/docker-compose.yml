@@ -22,7 +22,7 @@ services:
       # Logging
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     networks:
-      - ms-databases_datalake-network
+      - datalake-network
     depends_on:
       - dummy
 
@@ -49,7 +49,7 @@ services:
       # Logging
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     networks:
-      - ms-databases_datalake-network
+      - datalake-network
     depends_on:
       - dummy
 
@@ -76,7 +76,7 @@ services:
       # Logging
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     networks:
-      - ms-databases_datalake-network
+      - datalake-network
     depends_on:
       - dummy
 
@@ -85,8 +85,8 @@ services:
     image: alpine:latest
     command: echo "Ingesters ready"
     networks:
-      - ms-databases_datalake-network
+      - datalake-network
 
 networks:
-  ms-databases_datalake-network:
+  datalake-network:
     external: true

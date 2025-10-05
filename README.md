@@ -82,7 +82,82 @@ cloud-m5/
     └── README.md              # Documentación API con endpoints
 ```
 
-## 🚀 Inicio Rápido en EC2 Ubuntu
+## � Arquitectura de Redes Docker
+
+### Conectividad Entre Componentes
+
+```
+┌─────────────────────────────────────────────────┐
+│          Red: datalake-network                  │
+│          (Comunicación interna)                 │
+│                                                 │
+│  ┌──────────┐  ┌───────────┐  ┌──────────┐    │
+│  │ MySQL    │  │PostgreSQL │  │ MongoDB  │    │
+│  │ :3306    │  │  :5432    │  │ :27017   │    │
+│  └──────────┘  └───────────┘  └──────────┘    │
+│       ↑              ↑              ↑          │
+│       │   Conexión directa via    │          │
+│       │   nombres de contenedores  │          │
+│       └──────────────┴──────────────┘          │
+│                      │                         │
+│           ┌──────────────────────┐             │
+│           │  Ingester Containers │             │
+│           │  - ingesta01-mysql   │             │
+│           │  - ingesta02-postgres│             │
+│           │  - ingesta03-mongodb │             │
+│           └──────────────────────┘             │
+│                                                 │
+└─────────────────────────────────────────────────┘
+
+        ┌─────────────────┐
+        │  API-Consultas  │  ← NO necesita red Docker
+        │    :8000        │     (solo se comunica con AWS)
+        └─────────────────┘
+                │
+                ↓ HTTPS (boto3)
+        ┌─────────────────┐
+        │  Amazon Athena  │
+        │  (AWS Cloud)    │
+        └─────────────────┘
+                │
+                ↓ Query S3
+        ┌─────────────────┐
+        │   Amazon S3     │
+        └─────────────────┘
+```
+
+### ¿Quién necesita estar en la red Docker?
+
+| Componente | Red Docker | Razón |
+|------------|------------|-------|
+| **ms-databases** | ✅ `datalake-network` | Crea la red para que otros componentes se conecten |
+| **datalake-ingester** | ✅ `datalake-network` | Necesita conectarse directamente a las 3 bases de datos usando nombres de contenedores (`mysql-db`, `postgres-db`, `mongo-db`) |
+| **api-consultas** | ❌ **NO necesita red** | Solo se comunica con Amazon Athena (servicio AWS en la nube). No accede directamente a las bases de datos |
+
+### Flujo de Conexiones
+
+1. **Ingesters → Bases de Datos**: Conexión directa dentro de `datalake-network`
+   - Host: `mysql-db`, `postgres-db`, `mongo-db` (nombres de contenedores)
+   - Comunicación: TCP interno de Docker
+
+2. **Ingesters → S3**: Conexión HTTPS vía boto3 SDK
+   - Usa IAM Role del EC2 para autenticación
+   - No requiere credenciales hardcoded
+
+3. **API → Athena/S3**: Conexión HTTPS vía boto3 SDK
+   - Usa IAM Role del EC2 para autenticación
+   - Lee datos desde S3 vía queries Athena
+   - **Nunca accede directamente a las bases de datos**
+
+### Creación de la Red
+
+La red `datalake-network` se crea automáticamente al ejecutar `docker-compose up -d` desde la raíz, o manualmente con:
+
+```bash
+docker network create datalake-network
+```
+
+## �🚀 Inicio Rápido en EC2 Ubuntu
 
 ### Pre-requisitos
 
@@ -321,6 +396,20 @@ docker inspect <nombre-contenedor>
 
 ## 🐛 Troubleshooting
 
+### Error: "network not found" o "declared as external, but could not be found"
+```bash
+# Crear la red manualmente
+docker network create datalake-network
+
+# Verificar que exista
+docker network ls | grep datalake
+
+# Luego levantar los servicios
+docker-compose up -d
+```
+
+**Nota importante**: Solo los **ingesters** necesitan estar en la red `datalake-network` para conectarse a las bases de datos. La **API** no necesita esta red porque solo se comunica con Athena (AWS).
+
 ### Error: "Cannot connect to Docker daemon"
 ```bash
 # Verificar que Docker esté corriendo
@@ -363,6 +452,26 @@ docker logs ingesta03-mongodb
 aws s3 ls s3://raw-ms1-data-bgc/
 
 # Revisar .env en datalake-ingester/
+```
+
+### Warnings: "AWS_ACCESS_KEY_ID variable is not set"
+Estos warnings son **normales y esperados** si usas IAM Role en EC2:
+```
+WARN[0000] The "AWS_ACCESS_KEY_ID" variable is not set. Defaulting to a blank string.
+WARN[0000] The "AWS_SECRET_ACCESS_KEY" variable is not set. Defaulting to a blank string.
+WARN[0000] The "AWS_SESSION_TOKEN" variable is not set. Defaulting to a blank string.
+```
+
+**Puedes ignorarlos** porque:
+- El EC2 usa IAM Role (`LabRole`) para autenticación automática
+- No necesitas credenciales hardcoded en los `.env`
+- Los servicios obtienen credenciales temporales del EC2 metadata service
+
+Si prefieres eliminar los warnings, deja las variables vacías en los `.env`:
+```bash
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_SESSION_TOKEN=
 ```
 
 ### API devuelve 500 Internal Server Error
