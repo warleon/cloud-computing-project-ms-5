@@ -149,13 +149,33 @@ cloud-m5/
    - Lee datos desde S3 vía queries Athena
    - **Nunca accede directamente a las bases de datos**
 
-### Creación de la Red
+### Configuración de Red con `include`
 
-La red `datalake-network` se crea automáticamente al ejecutar `docker-compose up -d` desde la raíz, o manualmente con:
+Cuando se usa `include` en Docker Compose (como en este proyecto):
 
-```bash
-docker network create datalake-network
-```
+1. **El archivo raíz** (`docker-compose.yml`) define la red:
+   ```yaml
+   networks:
+     datalake-network:
+       driver: bridge
+   ```
+
+2. **Los archivos individuales** referencian la red pero **NO la definen**:
+   ```yaml
+   services:
+     mysql-db:
+       networks:
+         - datalake-network
+   
+   # ❌ NO incluir sección "networks:" al final del archivo
+   ```
+
+3. **La red se crea automáticamente** al ejecutar:
+   ```bash
+   docker-compose up -d
+   ```
+
+**Importante**: Los archivos `ms-databases/docker-compose.yml` y `datalake-ingester/docker-compose.yml` solo **referencian** la red en los servicios, pero no la definen al final. Esto evita conflictos con el `include`.
 
 ## �🚀 Inicio Rápido en EC2 Ubuntu
 
@@ -214,6 +234,22 @@ cd ..  # Volver a raíz
 **⚠️ IMPORTANTE**: Los archivos `.env` contienen credenciales reales y NO se suben a Git.
 
 ### 2. Desplegar Todos los Servicios
+
+#### Verificar versión de Docker Compose
+
+```bash
+# Docker Compose V2 (más reciente - integrado con Docker)
+docker compose version
+
+# Docker Compose V1 (versión antigua - comando separado)
+docker-compose --version
+```
+
+**Nota**: Los comandos cambian según la versión:
+- **V2**: `docker compose` (con espacio)
+- **V1**: `docker-compose` (con guión)
+
+En los ejemplos siguientes usaremos **V1** (`docker-compose`), si tienes V2 usa `docker compose`.
 
 #### Opción A: Docker Compose desde la Raíz (Más Simple)
 
@@ -396,19 +432,29 @@ docker inspect <nombre-contenedor>
 
 ## 🐛 Troubleshooting
 
-### Error: "network not found" o "declared as external, but could not be found"
+### Error: "networks.datalake-network conflicts with imported resource"
+
+Este error ocurre cuando múltiples archivos docker-compose intentan definir la misma red.
+
+**Solución**: La red debe definirse **solo en el archivo raíz** (`docker-compose.yml`):
+
+```yaml
+# docker-compose.yml (raíz)
+networks:
+  datalake-network:
+    driver: bridge
+```
+
+Los archivos individuales (`ms-databases/`, `datalake-ingester/`) **NO** deben tener sección `networks:` al final, solo referencian la red en los servicios.
+
 ```bash
-# Crear la red manualmente
-docker network create datalake-network
-
-# Verificar que exista
-docker network ls | grep datalake
-
-# Luego levantar los servicios
+# Si persiste el error, limpiar y reiniciar:
+docker-compose down
+docker network prune -f
 docker-compose up -d
 ```
 
-**Nota importante**: Solo los **ingesters** necesitan estar en la red `datalake-network` para conectarse a las bases de datos. La **API** no necesita esta red porque solo se comunica con Athena (AWS).
+**Nota importante**: Solo los **ingesters** y **bases de datos** necesitan estar en la red `datalake-network`. La **API** no necesita esta red porque solo se comunica con Athena (AWS).
 
 ### Error: "Cannot connect to Docker daemon"
 ```bash
@@ -421,6 +467,28 @@ sudo systemctl start docker
 # Agregar usuario al grupo docker
 sudo usermod -aG docker $USER
 newgrp docker
+```
+
+### Error: "The container name is already in use"
+
+Este error ocurre cuando hay contenedores de intentos anteriores que no se eliminaron.
+
+```bash
+# Detener todos los servicios
+docker-compose down
+
+# Eliminar contenedores específicos que quedaron
+docker rm -f $(docker ps -aq --filter "name=ingesta") 2>/dev/null || true
+docker rm -f $(docker ps -aq --filter "name=mysql-test") 2>/dev/null || true
+docker rm -f $(docker ps -aq --filter "name=postgres-test") 2>/dev/null || true
+docker rm -f $(docker ps -aq --filter "name=mongo-test") 2>/dev/null || true
+docker rm -f $(docker ps -aq --filter "name=api-consultas") 2>/dev/null || true
+
+# Limpiar redes huérfanas
+docker network prune -f
+
+# Levantar servicios limpios
+docker-compose up -d
 ```
 
 ### Error: "Port already in use"
