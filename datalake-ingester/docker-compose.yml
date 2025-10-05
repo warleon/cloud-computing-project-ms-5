@@ -86,7 +86,3 @@ services:
     command: echo "Ingesters ready"
     networks:
       - datalake-network
-
-networks:
-  datalake-network:
-    external: true
